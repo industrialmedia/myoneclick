@@ -1,0 +1,10 @@
+form:
+  name_label: Имя
+  phone_label: Телефон
+  mail_label: E-mail
+  submit_label: Купить
+popup:
+  width: '550'
+  button_name: 'Купить в один клик'
+  title: 'Купить в один клик'
+  dialog_options: '{}'

@@ -1,0 +1,17 @@
+myoneclick.admin_settings:
+  path: '/admin/myapi/myoneclick-settings'
+  defaults:
+    _form: '\Drupal\myoneclick\Form\MyoneclickSettingsForm'
+    _title: 'Settings buy one click'
+  requirements:
+    _permission: 'administer myoneclick'
+
+myoneclick.form:
+  path: '/buy-one-click/{commerce_product}'
+  defaults:
+    _form: '\Drupal\myoneclick\Form\MyoneclickForm'
+    _title_callback: '\Drupal\myoneclick\Controller\MyoneclickController::formTitleCallback'
+  requirements:
+    _permission: 'access content'
+
+

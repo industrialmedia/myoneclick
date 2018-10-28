@@ -1,0 +1,6 @@
+myoneclick.admin_settings:
+  title: 'Настройки покупки в 1 клик'
+  route_name: 'myoneclick.admin_settings'
+  parent: 'myapi.admin'
+  description: 'Настройки покупки в 1 клик: форма заказа, попап...'
+  weight: 101

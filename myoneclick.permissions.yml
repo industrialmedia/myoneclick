@@ -1,0 +1,3 @@
+administer myoneclick:
+  title: 'Administer myoneclick'
+  restrict access: TRUE

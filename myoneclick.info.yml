@@ -1,0 +1,8 @@
+name: 'myoneclick'
+type: module
+description: 'My buy one click'
+core: 8.x
+package: 'AAMID commerce'
+dependencies:
+  - commerce
+  - token
