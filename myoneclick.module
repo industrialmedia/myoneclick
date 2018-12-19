@@ -20,17 +20,29 @@ use Drupal\Component\Serialization\Json;
  */
 function myoneclick_form_alter(&$form, FormStateInterface &$form_state, $form_id) {
   if ($form_state->getBuildInfo()['callback_object'] instanceof AddToCartFormInterface) {
-    $storage = $form_state->getStorage();
-    if ($storage['view_mode'] == 'full') {
-      /** @var Product $product */
-      $product = $storage['product'];
-      /** @var ProductVariation[] $product_variations */
-      $product_variations = $product->getVariations();
-      $product_variation = $product_variations[0];
-      $qty = $product_variation->get('field_qty')->getValue();
-      if (isset($qty[0]['value']) && $qty[0]['value'] > 0) {
-        $form['actions']['buy_one_click'] = myoneclick_get_link_element($product->id());
-        $form['actions']['buy_one_click']['#weight'] = $form['actions']['submit']['#weight'] + 0.1;
+    $config = Drupal::config('myoneclick.settings');
+    if ($config->get('load_popup.addtocart')) {
+      $view_modes = $config->get('load_popup.addtocart_view_modes');
+      $storage = $form_state->getStorage();
+      if (in_array($storage['view_mode'], $view_modes)) {
+        /** @var Product $product */
+        $product = $storage['product'];
+        /** @var ProductVariation[] $product_variations */
+        $product_variations = $product->getVariations();
+        $product_variation = $product_variations[0];
+        $price = $product_variation->getPrice();
+
+        $is_availability = TRUE;
+        if (method_exists($product, 'isAvailability')) {
+          $is_availability = $product->isAvailability();
+        }
+        \Drupal::moduleHandler()
+          ->alter('myoneclick_is_availability', $product, $is_availability);
+
+        if ($is_availability && !$price->isZero()) {
+          $form['actions']['buy_one_click'] = myoneclick_get_link_element($product->id());
+          $form['actions']['buy_one_click']['#weight'] = $form['actions']['submit']['#weight'] + 0.1;
+        }
       }
     }
   }

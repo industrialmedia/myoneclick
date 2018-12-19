@@ -1,3 +1,7 @@
+load_popup:
+  addtocart: 1
+  addtocart_view_modes:
+    full: full
 form:
   name_label: Имя
   phone_label: Телефон
