@@ -6,6 +6,7 @@ form:
   name_label: Имя
   phone_label: Телефон
   mail_label: E-mail
+  city_label: Город
   submit_label: Купить
 popup:
   width: '550'
