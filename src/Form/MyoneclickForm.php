@@ -17,7 +17,7 @@ use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\commerce_shipping\PackerManagerInterface;
-
+use Drupal\Core\Utility\Token;
 
 class MyoneclickForm extends FormBase implements ContainerInjectionInterface {
 
@@ -80,6 +80,13 @@ class MyoneclickForm extends FormBase implements ContainerInjectionInterface {
    */
   protected $packerManager;
 
+  /**
+   * Token service.
+   *
+   * @var \Drupal\Core\Utility\Token
+   */
+  protected $token;
+
 
   /**
    * Constructs a new MyoneclickForm object.
@@ -100,8 +107,10 @@ class MyoneclickForm extends FormBase implements ContainerInjectionInterface {
    *   The config factory.
    * @param \Drupal\commerce_shipping\PackerManagerInterface $packer_manager
    *   The packer manager.
+   * @param \Drupal\Core\Utility\Token $token
+   *   The token utility.
    */
-  public function __construct(MessengerInterface $messenger, EntityTypeManagerInterface $entity_type_manager, CartManagerInterface $cart_manager, CartProviderInterface $cart_provider, OrderTypeResolverInterface $order_type_resolver, CurrentStoreInterface $current_store, ConfigFactoryInterface $config_factory, PackerManagerInterface $packer_manager) {
+  public function __construct(MessengerInterface $messenger, EntityTypeManagerInterface $entity_type_manager, CartManagerInterface $cart_manager, CartProviderInterface $cart_provider, OrderTypeResolverInterface $order_type_resolver, CurrentStoreInterface $current_store, ConfigFactoryInterface $config_factory, PackerManagerInterface $packer_manager, Token $token) {
     $this->messenger = $messenger;
     $this->entityTypeManager = $entity_type_manager;
     $this->cartManager = $cart_manager;
@@ -110,6 +119,7 @@ class MyoneclickForm extends FormBase implements ContainerInjectionInterface {
     $this->currentStore = $current_store;
     $this->configFactory = $config_factory;
     $this->packerManager = $packer_manager;
+    $this->token = $token;
   }
 
 
@@ -133,6 +143,8 @@ class MyoneclickForm extends FormBase implements ContainerInjectionInterface {
     $config_factory = $container->get('config.factory');
     /* @var \Drupal\commerce_shipping\PackerManagerInterface $packer_manager */
     $packer_manager = $container->get('commerce_shipping.packer_manager');
+    /* @var \Drupal\Core\Utility\Token $token */
+    $token = $container->get('token');
 
     return new static(
       $messenger,
@@ -142,7 +154,8 @@ class MyoneclickForm extends FormBase implements ContainerInjectionInterface {
       $order_type_resolver,
       $current_store,
       $config_factory,
-      $packer_manager
+      $packer_manager,
+      $token
     );
   }
 
@@ -160,6 +173,17 @@ class MyoneclickForm extends FormBase implements ContainerInjectionInterface {
    */
   public function buildForm(array $form, FormStateInterface $form_state, ProductInterface $commerce_product = NULL) {
     $myoneclick_config = $this->configFactory->get('myoneclick.settings');
+
+    if (empty($form['#prefix'])) {
+      $form['#prefix'] = '';
+    }
+    $text_top = $myoneclick_config->get('form.text_top');
+    if (!empty($text_top)) {
+      $text_top = $this->token->replace($text_top, ['commerce_product' => $commerce_product]);
+      $form['#prefix'] .= '<div class="text-top-wrapper">' . $text_top . '</div>';
+    }
+
+
     $form['product_id'] = array(
       '#type' => 'value',
       '#value' => $commerce_product->id(),
@@ -203,7 +227,7 @@ class MyoneclickForm extends FormBase implements ContainerInjectionInterface {
       ],
     ];
     $form['#attached']['html_head'][] = [$noindex_nofollow, 'noindex_nofollow'];
-    
+
     return $form;
   }
 

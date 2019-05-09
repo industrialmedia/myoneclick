@@ -6,12 +6,14 @@ use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Component\Serialization\Json;
-use Drupal\Core\Entity\EntityDisplayRepositoryInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\field\Entity\FieldStorageConfig;
 
+/**
+ * MyoneclickSettingsForm
+ */
 class MyoneclickSettingsForm extends ConfigFormBase implements ContainerInjectionInterface {
 
 
@@ -124,6 +126,13 @@ class MyoneclickSettingsForm extends ConfigFormBase implements ContainerInjectio
       '#group' => 'settings',
       '#tree' => TRUE,
     ];
+
+    $form['form']['text_top'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('Text top for form'),
+      '#default_value' => $settings_config->get('form.text_top'),
+    ];
+
     $form['form']['name_label'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Name label'),
@@ -149,6 +158,14 @@ class MyoneclickSettingsForm extends ConfigFormBase implements ContainerInjectio
       '#title' => $this->t('Submit label'),
       '#default_value' => $settings_config->get('form.submit_label'),
     ];
+    $form['form']['token_tree'] = array(
+      '#theme' => 'token_tree_link',
+      '#token_types' => array('commerce_product'),
+      '#show_restricted' => TRUE,
+      '#show_nested' => FALSE,
+      '#weight' => 90,
+    );
+
     // Tab - popup
     $form['popup'] = [
       '#type' => 'details',
@@ -234,7 +251,7 @@ class MyoneclickSettingsForm extends ConfigFormBase implements ContainerInjectio
       '#default_value' => $settings_config->get('save.fields.city'),
       '#element_validate' => [[get_class($this), 'saveFieldValidate']],
     ];
-    
+
     return parent::buildForm($form, $form_state);
   }
 
@@ -266,8 +283,6 @@ class MyoneclickSettingsForm extends ConfigFormBase implements ContainerInjectio
   }
 
 
-
-
   /**
    * {@inheritdoc}
    */
@@ -294,6 +309,7 @@ class MyoneclickSettingsForm extends ConfigFormBase implements ContainerInjectio
       ->set('popup.button_name', $form_state->getValue('popup')['button_name'])
       ->set('popup.title', $form_state->getValue('popup')['title']);
     $settings_config
+      ->set('form.text_top', $form_state->getValue('form')['text_top'])
       ->set('form.name_label', $form_state->getValue('form')['name_label'])
       ->set('form.phone_label', $form_state->getValue('form')['phone_label'])
       ->set('form.mail_label', $form_state->getValue('form')['mail_label'])
