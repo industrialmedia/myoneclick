@@ -266,6 +266,8 @@ class MyoneclickForm extends FormBase implements ContainerInjectionInterface {
 
 
     $cart->setEmail($mail);
+    $cart->set('field_order_oneclick', TRUE);
+
     $myoneclick_config = $this->configFactory->get('myoneclick.settings');
     $save_fields = [
       'save.fields.name',
