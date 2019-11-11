@@ -10,7 +10,7 @@ use Drupal\commerce_product\Entity\Product;
 use Drupal\commerce_product\Entity\ProductVariation;
 use Drupal\Core\Url;
 use Drupal\Component\Serialization\Json;
-
+use Drupal\Core\Messenger\MessengerInterface;
 
 /**
  * Implements hook_form_alter().
@@ -25,6 +25,7 @@ function myoneclick_form_alter(&$form, FormStateInterface &$form_state, $form_id
       $view_modes = $config->get('load_popup.addtocart_view_modes');
       $storage = $form_state->getStorage();
       if (in_array($storage['view_mode'], $view_modes)) {
+        $logic = $config->get('load_popup.logic');
         /** @var Product $product */
         $product = $storage['product'];
         /** @var ProductVariation[] $product_variations */
@@ -40,7 +41,16 @@ function myoneclick_form_alter(&$form, FormStateInterface &$form_state, $form_id
           ->alter('myoneclick_is_availability', $product, $is_availability);
 
         if ($is_availability && !$price->isZero()) {
-          $form['actions']['buy_one_click'] = myoneclick_get_link_element($product->id());
+          if ($logic == 'popup') {
+            $form['actions']['buy_one_click'] = myoneclick_get_link_element($product->id());
+          }
+          elseif ($logic == 'page') {
+            $form['actions']['buy_one_click'] = $form['actions']['submit'];
+            unset($form['actions']['buy_one_click']['#ajax']);
+            $form['actions']['buy_one_click']['#value'] = $config->get('popup.button_name');
+            $form['#submit'][] = 'myoneclick_logic_page_submit';
+            $form['actions']['buy_one_click']['#submit'][] = 'myoneclick_logic_page_submit';
+          }
           $form['actions']['buy_one_click']['#weight'] = $form['actions']['submit']['#weight'] + 0.1;
         }
       }
@@ -48,6 +58,11 @@ function myoneclick_form_alter(&$form, FormStateInterface &$form_state, $form_id
   }
 }
 
+
+function myoneclick_logic_page_submit(array $form, FormStateInterface &$form_state) {
+  \Drupal::messenger()->deleteByType(MessengerInterface::TYPE_STATUS);
+  $form_state->setRedirect('myoneclick.checkout_page', ['commerce_order' => $form_state->get('cart_id')]);
+}
 
 /**
  * @param $product_id
@@ -80,4 +95,19 @@ function myoneclick_get_link_element($product_id) {
     }
   }
   return $element;
+}
+
+
+/**
+ * Implements hook_theme().
+ */
+function myoneclick_theme() {
+  return [
+    'myoneclick_form' => [
+      'render element' => 'form',
+    ],
+    'myoneclick_checkout_page_form' => [
+      'render element' => 'form',
+    ],
+  ];
 }

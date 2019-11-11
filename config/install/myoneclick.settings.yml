@@ -1,4 +1,5 @@
 load_popup:
+  logic: popup
   addtocart: 1
   addtocart_view_modes:
     full: full

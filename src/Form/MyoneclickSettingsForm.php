@@ -10,6 +10,9 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\field\Entity\FieldStorageConfig;
+use Drupal\Core\Entity\EntityStorageInterface;
+
+
 
 /**
  * MyoneclickSettingsForm
@@ -24,6 +27,13 @@ class MyoneclickSettingsForm extends ConfigFormBase implements ContainerInjectio
    */
   protected $entityTypeManager;
 
+  /**
+   * The view storage.
+   *
+   * @var \Drupal\Core\Entity\EntityStorageInterface
+   */
+  protected $viewStorage;
+
 
   /**
    * Constructs a \Drupal\system\ConfigFormBase object.
@@ -32,10 +42,15 @@ class MyoneclickSettingsForm extends ConfigFormBase implements ContainerInjectio
    *   The factory for configuration objects.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager.
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
+   *   The factory for configuration objects.
+   * @param \Drupal\Core\Entity\EntityStorageInterface $view_storage
+   *   The view storage.
    */
-  public function __construct(ConfigFactoryInterface $config_factory, EntityTypeManagerInterface $entity_type_manager) {
+  public function __construct(ConfigFactoryInterface $config_factory, EntityTypeManagerInterface $entity_type_manager, EntityStorageInterface $view_storage) {
     parent::__construct($config_factory);
     $this->entityTypeManager = $entity_type_manager;
+    $this->viewStorage = $view_storage;
   }
 
   /**
@@ -46,10 +61,12 @@ class MyoneclickSettingsForm extends ConfigFormBase implements ContainerInjectio
     $config_factory = $container->get('config.factory');
     /* @var \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager */
     $entity_type_manager = $container->get('entity_type.manager');
-
+    /* @var \Drupal\Core\Entity\EntityStorageInterface $view_storage */
+    $view_storage = $container->get('entity.manager')->getStorage('view');
     return new static(
       $config_factory,
-      $entity_type_manager
+      $entity_type_manager,
+      $view_storage
     );
   }
 
@@ -87,6 +104,17 @@ class MyoneclickSettingsForm extends ConfigFormBase implements ContainerInjectio
       '#group' => 'settings',
       '#tree' => TRUE,
     ];
+
+    $form['load_popup']['logic'] = [
+      '#type' => 'radios',
+      '#title' => 'Логика кнопки быстрого заказа',
+      '#default_value' => $settings_config->get('load_popup.logic'),
+      '#options' => [
+        'popup' => 'Вызывает попапа быстрого заказа. По сабмиту добавляет товар в корзину и создает быстрый заказ.',
+        'page' => 'Добавляет товар в корзину и делает редирект на страницу (форму) быстрого зказа',
+      ],
+    ];
+
     $form['load_popup']['addtocart'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Add button "Buy one click" to add to cart form'),
@@ -132,6 +160,61 @@ class MyoneclickSettingsForm extends ConfigFormBase implements ContainerInjectio
       '#title' => $this->t('Text top for form'),
       '#default_value' => $settings_config->get('form.text_top'),
     ];
+    $form['form']['text_bottom'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('Text bottom for form'),
+      '#default_value' => $settings_config->get('form.text_bottom'),
+    ];
+
+
+    //
+    /** @var \Drupal\views\Entity\View[] $views */
+    $views = $this->viewStorage->loadMultiple();
+    $options = [];
+    foreach ($views as $view) {
+      if (!$view->status()) {
+        continue;
+      }
+      $options[$view->id()] = $view->label();
+    }
+    $default_view_id = $form_state->getValue([
+      'form',
+      'view_id'
+    ]);
+    if (empty($default_view_id)) {
+      $default_view_id = $settings_config->get('form.view_id');
+    }
+    $form['form']['view_id'] = [
+      '#type' => 'select',
+      '#title' => 'View',
+      '#options' => $options,
+      '#empty_option' => '- Select -',
+      '#default_value' => $default_view_id,
+      '#ajax' => [
+        'callback' => [get_class($this), 'ajaxRefresh'],
+        'wrapper' => 'myoneclick-settings-view-display-id-wrapper',
+      ],
+      '#description' => 'Если заполнено в форме будет выведено это представление',
+    ];
+    if ($default_view_id) {
+      $options = [];
+      $displays = $views[$default_view_id]->get('display');
+      foreach ($displays as $display) {
+        $options[$display['id']] = $display['display_title'];
+      }
+      $form['form']['view_display_id'] = [
+        '#type' => 'select',
+        '#title' => 'View display',
+        '#options' => $options,
+        '#empty_option' => '- Select -',
+        '#default_value' => $settings_config->get('form.view_display_id'),
+      ];
+    }
+    $form['form']['view_display_id']['#prefix'] = '<div id="myoneclick-settings-view-display-id-wrapper">';
+    $form['form']['view_display_id']['#suffix'] = '</div>';
+    //
+
+
 
     $form['form']['name_label'] = [
       '#type' => 'textfield',
@@ -160,7 +243,7 @@ class MyoneclickSettingsForm extends ConfigFormBase implements ContainerInjectio
     ];
     $form['form']['token_tree'] = array(
       '#theme' => 'token_tree_link',
-      '#token_types' => array('commerce_product'),
+      '#token_types' => array('commerce_product', 'commerce_order'),
       '#show_restricted' => TRUE,
       '#show_nested' => FALSE,
       '#weight' => 90,
@@ -302,6 +385,7 @@ class MyoneclickSettingsForm extends ConfigFormBase implements ContainerInjectio
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $settings_config = $this->config('myoneclick.settings');
     $settings_config
+      ->set('load_popup.logic', $form_state->getValue('load_popup')['logic'])
       ->set('load_popup.addtocart', $form_state->getValue('load_popup')['addtocart'])
       ->set('load_popup.addtocart_view_modes', array_filter($form_state->getValue('load_popup')['addtocart_view_modes']));
     $settings_config
@@ -310,6 +394,9 @@ class MyoneclickSettingsForm extends ConfigFormBase implements ContainerInjectio
       ->set('popup.title', $form_state->getValue('popup')['title']);
     $settings_config
       ->set('form.text_top', $form_state->getValue('form')['text_top'])
+      ->set('form.text_bottom', $form_state->getValue('form')['text_bottom'])
+      ->set('form.view_id', $form_state->getValue('form')['view_id'])
+      ->set('form.view_display_id', $form_state->getValue('form')['view_display_id'])
       ->set('form.name_label', $form_state->getValue('form')['name_label'])
       ->set('form.phone_label', $form_state->getValue('form')['phone_label'])
       ->set('form.mail_label', $form_state->getValue('form')['mail_label'])
@@ -323,6 +410,11 @@ class MyoneclickSettingsForm extends ConfigFormBase implements ContainerInjectio
       ->set('save.fields.city', $form_state->getValue('save')['fields']['city'])
       ->save();
     parent::submitForm($form, $form_state);
+  }
+
+
+  public static function ajaxRefresh($form, FormStateInterface $form_state) {
+    return $form['form']['view_display_id'];
   }
 
 
