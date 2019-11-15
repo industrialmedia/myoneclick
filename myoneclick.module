@@ -48,6 +48,17 @@ function myoneclick_form_alter(&$form, FormStateInterface &$form_state, $form_id
             $form['actions']['buy_one_click'] = $form['actions']['submit'];
             unset($form['actions']['buy_one_click']['#ajax']);
             $form['actions']['buy_one_click']['#value'] = $config->get('popup.button_name');
+
+            // class
+            if (!empty($form['actions']['buy_one_click']['#attributes']['class'])) {
+              foreach ($form['actions']['buy_one_click']['#attributes']['class'] as $key => $class) {
+                if ($class == 'button--add-to-cart') {
+                  unset($form['actions']['buy_one_click']['#attributes']['class'][$key]);
+                }
+              }
+            }
+            $form['actions']['buy_one_click']['#attributes']['class'][] = 'button--buy-one-click';
+
             $form['#submit'][] = 'myoneclick_logic_page_submit';
             $form['actions']['buy_one_click']['#submit'][] = 'myoneclick_logic_page_submit';
           }
