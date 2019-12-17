@@ -68,13 +68,8 @@ class MyoneclickCheckoutPageController extends ControllerBase {
   public function checkoutPage(RouteMatchInterface $route_match) {
     /** @var \Drupal\commerce_order\Entity\OrderInterface $order */
     $order = $route_match->getParameter('commerce_order');
-
-
-
     $form = $this->formBuilder->getForm('Drupal\myoneclick\Form\MyoneclickFormCheckoutPage', $order);
-
-   // dump($form);
-
+    // dump($form);
     return $form;
   }
 

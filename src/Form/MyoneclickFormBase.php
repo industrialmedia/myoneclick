@@ -172,7 +172,7 @@ class MyoneclickFormBase extends FormBase implements ContainerInjectionInterface
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, ProductInterface $commerce_product = NULL) {
+  public function buildForm(array $form, FormStateInterface $form_state) {
 
   }
 
