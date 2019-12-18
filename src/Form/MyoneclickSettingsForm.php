@@ -384,6 +384,12 @@ class MyoneclickSettingsForm extends ConfigFormBase implements ContainerInjectio
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $settings_config = $this->config('myoneclick.settings');
+
+    $view_display_id = '';
+    if (!empty($form_state->getValue('form')['view_display_id'])) {
+      $view_display_id = $form_state->getValue('form')['view_display_id'];
+    }
+
     $settings_config
       ->set('load_popup.logic', $form_state->getValue('load_popup')['logic'])
       ->set('load_popup.addtocart', $form_state->getValue('load_popup')['addtocart'])
@@ -396,7 +402,7 @@ class MyoneclickSettingsForm extends ConfigFormBase implements ContainerInjectio
       ->set('form.text_top', $form_state->getValue('form')['text_top'])
       ->set('form.text_bottom', $form_state->getValue('form')['text_bottom'])
       ->set('form.view_id', $form_state->getValue('form')['view_id'])
-      ->set('form.view_display_id', $form_state->getValue('form')['view_display_id'])
+      ->set('form.view_display_id', $view_display_id)
       ->set('form.name_label', $form_state->getValue('form')['name_label'])
       ->set('form.phone_label', $form_state->getValue('form')['phone_label'])
       ->set('form.mail_label', $form_state->getValue('form')['mail_label'])

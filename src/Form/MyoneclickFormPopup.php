@@ -29,6 +29,10 @@ class MyoneclickFormPopup extends MyoneclickFormBase {
       '#type' => 'value',
       '#value' => $commerce_product->id(),
     );
+    $form['quantity'] = array(
+      '#type' => 'hidden',
+      '#value' => 1,
+    );
 
     $form['text_top'] = [];
     $text_top = $myoneclick_config->get('form.text_top');
@@ -36,7 +40,7 @@ class MyoneclickFormPopup extends MyoneclickFormBase {
       $text_top = $this->token->replace($text_top, ['commerce_product' => $commerce_product]);
       $form['text_top'] = [
         '#type' => 'markup',
-        '#markup' =>'<div class="text-top-wrapper">' . $text_top . '</div>',
+        '#markup' => '<div class="text-top-wrapper">' . $text_top . '</div>',
       ];
     }
 
@@ -75,7 +79,7 @@ class MyoneclickFormPopup extends MyoneclickFormBase {
       $text_bottom = $this->token->replace($text_bottom, ['commerce_product' => $commerce_product]);
       $form['text_bottom'] = [
         '#type' => 'markup',
-        '#markup' =>'<div class="text-bottom-wrapper">' . $text_bottom . '</div>',
+        '#markup' => '<div class="text-bottom-wrapper">' . $text_bottom . '</div>',
       ];
     }
 
@@ -106,6 +110,7 @@ class MyoneclickFormPopup extends MyoneclickFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
 
     $product_id = $form_state->getValue('product_id');
+    $quantity = $form_state->getValue('quantity');
     $name = $form_state->getValue('name');
     $phone = $form_state->getValue('phone');
     $mail = $form_state->getValue('mail');
@@ -116,7 +121,7 @@ class MyoneclickFormPopup extends MyoneclickFormBase {
     /** @var \Drupal\commerce_product\Entity\ProductVariation[] $product_variations */
     $product_variations = $product->getVariations();
     $product_variation = $product_variations[0];
-    $order_item = $this->cartManager->createOrderItem($product_variation);
+    $order_item = $this->cartManager->createOrderItem($product_variation, $quantity);
     $order_type_id = $this->orderTypeResolver->resolve($order_item);
     /** @var \Drupal\commerce_store\Entity\StoreInterface $store */
     $store = $this->currentStore->getStore();
@@ -130,8 +135,6 @@ class MyoneclickFormPopup extends MyoneclickFormBase {
     $this->redirectToComplete($cart->id(), $form_state);
     $this->messenger->deleteByType(MessengerInterface::TYPE_STATUS); // Очищаем системные сообщения
   }
-
-
 
 
 }
