@@ -11,7 +11,7 @@ use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\Core\Entity\EntityStorageInterface;
-
+use Drupal\Core\Entity\EntityDisplayRepositoryInterface;
 
 
 /**
@@ -34,6 +34,13 @@ class MyoneclickSettingsForm extends ConfigFormBase implements ContainerInjectio
    */
   protected $viewStorage;
 
+  /**
+   * The entity display repository.
+   *
+   * @var \Drupal\Core\Entity\EntityDisplayRepositoryInterface
+   */
+  protected $entityDisplayRepository;
+
 
   /**
    * Constructs a \Drupal\system\ConfigFormBase object.
@@ -42,15 +49,16 @@ class MyoneclickSettingsForm extends ConfigFormBase implements ContainerInjectio
    *   The factory for configuration objects.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager.
-   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
-   *   The factory for configuration objects.
    * @param \Drupal\Core\Entity\EntityStorageInterface $view_storage
    *   The view storage.
+   * @param \Drupal\Core\Entity\EntityDisplayRepositoryInterface $entity_display_repository
+   *   The entity display repository.
    */
-  public function __construct(ConfigFactoryInterface $config_factory, EntityTypeManagerInterface $entity_type_manager, EntityStorageInterface $view_storage) {
+  public function __construct(ConfigFactoryInterface $config_factory, EntityTypeManagerInterface $entity_type_manager, EntityStorageInterface $view_storage, EntityDisplayRepositoryInterface $entity_display_repository) {
     parent::__construct($config_factory);
     $this->entityTypeManager = $entity_type_manager;
     $this->viewStorage = $view_storage;
+    $this->entityDisplayRepository = $entity_display_repository;
   }
 
   /**
@@ -63,10 +71,13 @@ class MyoneclickSettingsForm extends ConfigFormBase implements ContainerInjectio
     $entity_type_manager = $container->get('entity_type.manager');
     /* @var \Drupal\Core\Entity\EntityStorageInterface $view_storage */
     $view_storage = $container->get('entity.manager')->getStorage('view');
+    /* @var \Drupal\Core\Entity\EntityDisplayRepositoryInterface $entity_display_repository */
+    $entity_display_repository = $container->get('entity_display.repository');
     return new static(
       $config_factory,
       $entity_type_manager,
-      $view_storage
+      $view_storage,
+      $entity_display_repository
     );
   }
 
@@ -122,9 +133,7 @@ class MyoneclickSettingsForm extends ConfigFormBase implements ContainerInjectio
       '#description' => $this->t('If the item is in stock and the price is not zero, add button "Buy one click" to add to cart form.'),
     ];
 
-    /* @var \Drupal\Core\Entity\EntityDisplayRepositoryInterface $entity_display_repository */
-    $entity_display_repository = \Drupal::service('entity_display.repository');
-    $view_modes = $entity_display_repository->getViewModes('commerce_product');
+    $view_modes = $this->entityDisplayRepository->getViewModes('commerce_product');
     $options = [];
     if ($view_modes) {
       foreach ($view_modes as $key => $view_mode) {
@@ -154,7 +163,6 @@ class MyoneclickSettingsForm extends ConfigFormBase implements ContainerInjectio
       '#group' => 'settings',
       '#tree' => TRUE,
     ];
-
     $form['form']['text_top'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Text top for form'),
@@ -165,9 +173,6 @@ class MyoneclickSettingsForm extends ConfigFormBase implements ContainerInjectio
       '#title' => $this->t('Text bottom for form'),
       '#default_value' => $settings_config->get('form.text_bottom'),
     ];
-
-
-    //
     /** @var \Drupal\views\Entity\View[] $views */
     $views = $this->viewStorage->loadMultiple();
     $options = [];
@@ -213,9 +218,6 @@ class MyoneclickSettingsForm extends ConfigFormBase implements ContainerInjectio
     $form['form']['view_display_id']['#prefix'] = '<div id="myoneclick-settings-view-display-id-wrapper">';
     $form['form']['view_display_id']['#suffix'] = '</div>';
     //
-
-
-
     $form['form']['name_label'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Name label'),
@@ -339,6 +341,11 @@ class MyoneclickSettingsForm extends ConfigFormBase implements ContainerInjectio
   }
 
 
+  /**
+   * @param $element
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   * @param $complete_form
+   */
   public static function saveFieldValidate(&$element, FormStateInterface $form_state, &$complete_form) {
     if (!empty($element['#value'])) {
       $message = 'Не верный формат поля "' . $element['#title'] . '"';
@@ -413,12 +420,17 @@ class MyoneclickSettingsForm extends ConfigFormBase implements ContainerInjectio
       ->set('save.shipping_method', $form_state->getValue('save')['shipping_method'])
       ->set('save.fields.name', $form_state->getValue('save')['fields']['name'])
       ->set('save.fields.phone', $form_state->getValue('save')['fields']['phone'])
-      ->set('save.fields.city', $form_state->getValue('save')['fields']['city'])
-      ->save();
+      ->set('save.fields.city', $form_state->getValue('save')['fields']['city']);
+    $settings_config->save();
     parent::submitForm($form, $form_state);
   }
 
 
+  /**
+   * @param $form
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   * @return mixed
+   */
   public static function ajaxRefresh($form, FormStateInterface $form_state) {
     return $form['form']['view_display_id'];
   }

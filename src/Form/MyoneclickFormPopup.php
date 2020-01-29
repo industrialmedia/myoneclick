@@ -4,10 +4,17 @@ namespace Drupal\myoneclick\Form;
 
 use Drupal\commerce_product\Entity\Product;
 use Drupal\commerce_product\Entity\ProductInterface;
+use Drupal\Component\Utility\Html;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Messenger\MessengerInterface;
+use Drupal\Core\Ajax\AjaxResponse;
+use Drupal\Core\Ajax\RedirectCommand;
+use Drupal\Core\Url;
 
-
+/**
+ * Class MyoneclickFormPopup
+ * @package Drupal\myoneclick\Form
+ */
 class MyoneclickFormPopup extends MyoneclickFormBase {
 
 
@@ -91,6 +98,17 @@ class MyoneclickFormPopup extends MyoneclickFormBase {
       '#value' => $myoneclick_config->get('form.submit_label'),
     ];
 
+    // ajaxSubmit
+    $form['#id'] = Html::getId($this->getFormId());
+    $form['actions']['submit']['#ajax'] = [
+      'callback' => '::ajaxSubmitCallback',
+      'wrapper' => $form['#id'],
+      'event' => 'click',
+      'progress' => [
+        'type' => 'throbber',
+      ],
+    ];
+
     $noindex_nofollow = [
       '#tag' => 'meta',
       '#attributes' => [
@@ -101,6 +119,29 @@ class MyoneclickFormPopup extends MyoneclickFormBase {
     $form['#attached']['html_head'][] = [$noindex_nofollow, 'noindex_nofollow'];
 
     return $form;
+  }
+
+
+  /**
+   * @param array $form
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   * @return array|\Drupal\Core\Ajax\AjaxResponse
+   */
+  public function ajaxSubmitCallback(array &$form, FormStateInterface $form_state) {
+    if ($form_state->hasAnyErrors()) {
+      unset($form['#prefix']);
+      unset($form['#suffix']);
+      return $form;
+    }
+
+    $response = new AjaxResponse();
+    $url = Url::fromRoute('commerce_checkout.form', [
+      'commerce_order' => $form_state->getValue('cart_id'),
+      'step' => 'complete'
+    ]);
+    $command = new RedirectCommand($url->toString());
+    $response->addCommand($command);
+    return $response;
   }
 
 
@@ -129,6 +170,7 @@ class MyoneclickFormPopup extends MyoneclickFormBase {
     if (!$cart) {
       $cart = $this->cartProvider->createCart($order_type_id, $store);
     }
+    $form_state->setValue('cart_id', $cart->id());
     $this->cartManager->addOrderItem($cart, $order_item);
 
     $this->saveOrderFields($cart, $mail, $name, $phone, $city);
