@@ -218,6 +218,20 @@ class MyoneclickSettingsForm extends ConfigFormBase implements ContainerInjectio
     $form['form']['view_display_id']['#prefix'] = '<div id="myoneclick-settings-view-display-id-wrapper">';
     $form['form']['view_display_id']['#suffix'] = '</div>';
     //
+
+
+    $form['form']['show_fields'] = [
+      '#type' => 'checkboxes',
+      '#title' => $this->t('Show fields'),
+      '#default_value' => !empty($settings_config->get('form.show_fields')) ? $settings_config->get('form.show_fields') : [],
+      '#options' => [
+        'name' => $this->t('Name'),
+        'phone' => $this->t('Phone'),
+        'mail' => $this->t('Email'),
+        'city' => $this->t('City'),
+      ],
+    ];
+
     $form['form']['name_label'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Name label'),
@@ -410,6 +424,7 @@ class MyoneclickSettingsForm extends ConfigFormBase implements ContainerInjectio
       ->set('form.text_bottom', $form_state->getValue('form')['text_bottom'])
       ->set('form.view_id', $form_state->getValue('form')['view_id'])
       ->set('form.view_display_id', $view_display_id)
+      ->set('form.show_fields', $form_state->getValue('form')['show_fields'])
       ->set('form.name_label', $form_state->getValue('form')['name_label'])
       ->set('form.phone_label', $form_state->getValue('form')['phone_label'])
       ->set('form.mail_label', $form_state->getValue('form')['mail_label'])

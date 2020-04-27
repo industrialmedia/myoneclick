@@ -185,6 +185,12 @@ class MyoneclickFormBase extends FormBase implements ContainerInjectionInterface
 
 
   protected function saveOrderFields(OrderInterface &$cart, $mail, $name, $phone, $city) {
+
+    // Генерация mail, если не заполнено
+    if (empty($mail)) {
+      $mail = 'oneclick_' . $cart->id() . '@one.click';
+    }
+
     $cart->setEmail($mail);
     $cart->set('field_order_oneclick', TRUE);
 
@@ -214,8 +220,7 @@ class MyoneclickFormBase extends FormBase implements ContainerInjectionInterface
           $field_name = $save_field_value[1];
           if ($save_field_value[0] == 'commerce_order') {
             $cart->set($field_name, $value);
-          }
-          elseif ($save_field_value[0] == 'profile') {
+          } elseif ($save_field_value[0] == 'profile') {
             $shipping_profile = $this->getShippingProfile($cart);
             $shipping_profile->set($field_name, $value);
             /** @var \Drupal\commerce_shipping\Entity\ShipmentInterface[] $shipments */
@@ -263,8 +268,7 @@ class MyoneclickFormBase extends FormBase implements ContainerInjectionInterface
   protected function onStepChange(OrderInterface &$order, $step_id) {
     if ($step_id == 'payment') {
       $order->lock();
-    }
-    elseif ($step_id != 'payment') {
+    } elseif ($step_id != 'payment') {
       $order->unlock();
     }
     if ($step_id == 'complete') {

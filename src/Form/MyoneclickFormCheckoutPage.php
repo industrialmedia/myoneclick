@@ -23,7 +23,7 @@ class MyoneclickFormCheckoutPage extends MyoneclickFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state, OrderInterface $commerce_order = NULL) {
     $myoneclick_config = $this->configFactory->get('myoneclick.settings');
-    
+
     $form['order_id'] = array(
       '#type' => 'value',
       '#value' => $commerce_order->id(),
@@ -39,27 +39,34 @@ class MyoneclickFormCheckoutPage extends MyoneclickFormBase {
       ];
     }
 
+    $show_fields = !empty($myoneclick_config->get('form.show_fields')) ? $myoneclick_config->get('form.show_fields') : [];
+    $show_fields = array_filter($show_fields);
+
     $form['name'] = [
       '#type' => 'textfield',
       '#title' => $myoneclick_config->get('form.name_label'),
       '#default_value' => $this->currentUser()->getAccountName(),
       '#required' => TRUE,
+      '#access' => !empty($show_fields['name']),
     ];
     $form['phone'] = [
       '#type' => 'tel',
       '#title' => $myoneclick_config->get('form.phone_label'),
       '#required' => TRUE,
+      '#access' => !empty($show_fields['phone']),
     ];
     $form['mail'] = [
       '#type' => 'email',
       '#title' => $myoneclick_config->get('form.mail_label'),
       '#default_value' => $this->currentUser()->getEmail(),
       '#required' => TRUE,
+      '#access' => !empty($show_fields['mail']),
     ];
     $form['city'] = [
       '#type' => 'textfield',
       '#title' => $myoneclick_config->get('form.city_label'),
       '#required' => TRUE,
+      '#access' => !empty($show_fields['city']),
     ];
 
     $view_id = $myoneclick_config->get('form.view_id');
