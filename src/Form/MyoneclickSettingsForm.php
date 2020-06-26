@@ -70,7 +70,7 @@ class MyoneclickSettingsForm extends ConfigFormBase implements ContainerInjectio
     /* @var \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager */
     $entity_type_manager = $container->get('entity_type.manager');
     /* @var \Drupal\Core\Entity\EntityStorageInterface $view_storage */
-    $view_storage = $container->get('entity.manager')->getStorage('view');
+    $view_storage = $container->get('entity_type.manager')->getStorage('view');
     /* @var \Drupal\Core\Entity\EntityDisplayRepositoryInterface $entity_display_repository */
     $entity_display_repository = $container->get('entity_display.repository');
     return new static(

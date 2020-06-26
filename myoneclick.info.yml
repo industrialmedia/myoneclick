@@ -1,7 +1,9 @@
 name: 'myoneclick'
 type: module
 description: 'My buy one click'
-core: 8.x
+core_version_requirement: ^8 || ^9
+version: '1.0.0'
+
 package: 'AAMID commerce'
 dependencies:
   - commerce
